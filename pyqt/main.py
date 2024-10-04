@@ -1,88 +1,79 @@
 import sys
-from PyQt5.QtWidgets import (
-    QApplication,
-    QWidget,
-    QGridLayout,
-    QLabel,
-    QFrame,
-    QDesktopWidget,
-    QVBoxLayout,
-    QComboBox,
-    QSizePolicy,
-)
+from gui import Ui_MainWindow  # 수정 부분
+from PyQt5 import *
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+import cv2
+from PyQt5.QtGui import QImage, QPixmap
+import time
 
 
-class MyApp(QWidget):
+class kinwriter(QMainWindow, Ui_MainWindow):
+
     def __init__(self):
         super().__init__()
-        self.initUI()
 
-    def initUI(self):
-        # 그리드 레이아웃 설정
-        grid = QGridLayout()
-        self.setLayout(grid)
+        self.setupUi(self)
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(False)
+        self.timer.setInterval(30)  # 30ms마다 프레임 업데이트 (카메라용)
+        self.timer.timeout.connect(self.update_frame)
 
-        # 각 영역을 메서드로 호출하여 구성
-        original = self.original_box()
-        cam = self.cam_box()
-        options_L, options_C, options_R = self.options_box()
+        # 카메라 초기화
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            print("카메라를 열 수 없습니다.")
+            return
 
-        # 레이아웃에 위젯 추가 (행, 열 위치)
-        grid.addWidget(original, 0, 0)  # 첫 번째 행, 첫 번째 열 (왼쪽 상단)
-        grid.addWidget(
-            cam, 0, 1, 1, 2
-        )  # 첫 번째 행, 두 번째와 세 번째 열 병합 (오른쪽 상단)
+        self.current_frame = None  # 현재 프레임을 저장할 변수
 
-        grid.addWidget(options_L, 1, 0)  # 두 번째 행, 첫 번째 열
-        grid.addWidget(options_C, 1, 1)  # 두 번째 행, 두 번째 열
-        grid.addWidget(options_R, 1, 2)  # 두 번째 행, 세 번째 열
+        self.pushButton.clicked.connect(self.capture)  # 캡처 버튼과 연결
 
-        # 열 비율 설정
-        grid.setColumnStretch(0, 2)  # 첫 번째 열 비율
-        grid.setColumnStretch(1, 1)  # 두 번째 열 비율
-        grid.setColumnStretch(2, 1)  # 세 번째 열 비율 (아래 행에서만 사용)
+        self.timer.start()  # 타이머 시작 (카메라 업데이트)
 
-        # 첫 번째 행(위쪽 두 박스)에 높은 비율 할당, 두 번째 행(아래 박스)에 낮은 비율 할당
-        grid.setRowStretch(0, 3)  # 첫 번째 행의 높이 비율을 3으로 설정
-        grid.setRowStretch(1, 1)  # 두 번째 행(아래 박스)의 높이 비율을 1로 설정 (작게)
-
-        # 윈도우 타이틀과 크기 설정
-        self.setWindowTitle("Custom Grid Layout")
-        self.resize(1600, 700)
-        self.center()
         self.show()
 
-    def center(self):
-        qr = self.frameGeometry()  # 창의 크기 정보 가져오기
-        cp = QDesktopWidget().availableGeometry().center()  # 화면의 중심 좌표 얻기
-        qr.moveCenter(cp)  # 창의 중심을 화면의 중심으로 이동
-        self.move(qr.topLeft())  # 창의 좌상단 좌표를 맞춰서 창을 이동
+    def update_frame(self):
+        # 카메라에서 프레임을 읽어와서 QLabel에 표시
+        ret, frame = self.cap.read()
+        if ret:
+            self.current_frame = frame  # 현재 프레임을 저장
+            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            qt_image = QImage(
+                rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888
+            )
+            self.widget.setPixmap(QPixmap.fromImage(qt_image))
 
-    ### 화면 구성 ###
-    def original_box(self):
-        original = QLabel("정상이미지")
-        original.setFrameStyle(QFrame.Box)
-        return original
+    # def capture(self):
+    #     # 콤보 박스에서 텍스트를 가져와 파일명에 포함
+    #     text1 = self.comboBox.currentText()
+    #     text2 = self.comboBox_2.currentText()
 
-    def cam_box(self):
-        cam = QLabel("카메라")
-        cam.setFrameStyle(QFrame.Box)
-        return cam
+    #     if self.current_frame is not None:
+    #         if not text1 or not text2:
+    #             QMessageBox.warning(self, "Warning", "모형 이름과 위치를 입력하세요.")
+    #             return
 
-    def options_box(self):
-        # options를 3열로 나눠서 각 부분 생성
-        options_L = QLabel("옵션 L")
-        options_L.setFrameStyle(QFrame.Box)
+    #         # 현재 시간을 기반으로 파일명 생성
+    #         timestamp = time.strftime("%Y%m%d_%H%M%S")
+    #         filename = f"./capture_{text1}_{text2}_{timestamp}.png"
 
-        options_C = QLabel("")
+    #         # 현재 프레임 저장
+    #         cv2.imwrite(filename, self.current_frame)
+    #         QMessageBox.information(self, "Saved", f"이미지를 저장했습니다: {filename}")
+    #     else:
+    #         QMessageBox.warning(self, "Warning", "저장할 프레임이 없습니다.")
 
-        options_R = QLabel("옵션 R")
-        options_R.setFrameStyle(QFrame.Box)
+    def closeEvent(self, event):
+        # 윈도우 종료 시 카메라 릴리스
+        if self.cap.isOpened():
+            self.cap.release()
+        event.accept()
 
-        return options_L, options_C, options_R
 
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    ex = MyApp()
-    sys.exit(app.exec_())
+app = QApplication([])
+sn = kinwriter()
+QApplication.processEvents()
+sys.exit(app.exec_())
