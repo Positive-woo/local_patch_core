@@ -116,6 +116,11 @@ class Ui_MainWindow(object):
 
     def additem_combobox_1(self, comboBox):
         path = source_folder
+        result_path = os.path.join(path, "result")
+
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+
         shape_list = [
             f
             for f in os.listdir(path)
