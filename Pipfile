@@ -4,15 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-numpy = "1.21.6"
 opencv-python = "*"
 pyqt5 = "*"
 python-dotenv = "*"
-matplotlib = "*"
-torchvision = "*"
+anomalib = {extras = ["full"], version = "==0.6.0"}
 
 [dev-packages]
-ipykernel = "*"
 
 [requires]
-python_version = "3.12.6"
+python_version = "3.10"
