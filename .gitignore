@@ -1,2 +1,4 @@
 .env
-/bottle
+pyqt/ipynb/bottle
+pyqt/ipynb/results
+pyqt/ipynb/datasets

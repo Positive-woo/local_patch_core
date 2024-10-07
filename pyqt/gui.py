@@ -3,6 +3,8 @@ from PyQt5 import QtCore, QtWidgets
 import cv2
 from dotenv import load_dotenv
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QFileDialog
+
 import os
 
 load_dotenv()
@@ -16,10 +18,6 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        # 정상 이미지 출력 layout
-        # self.graphicsView = QtWidgets.QGraphicsView(self.centralwidget)
-        # self.graphicsView.setGeometry(QtCore.QRect(600, 10, 590, 370))
-        # self.graphicsView.setObjectName("graphicsView")
         # 정상 이미지 출력 layout (QLabel로 변경)
         self.widget = QtWidgets.QLabel(self.centralwidget)
         self.widget.setGeometry(QtCore.QRect(600, 10, 590, 370))
@@ -67,6 +65,11 @@ class Ui_MainWindow(object):
         self.pushButton.setGeometry(QtCore.QRect(1100, 420, 91, 91))
         self.pushButton.setObjectName("cam_capture")
 
+        self.browse_button = QtWidgets.QPushButton(self.centralwidget)
+        self.browse_button.setGeometry(QtCore.QRect(90, 500, 311, 22))
+        self.browse_button.setText("파일 브라우저로 이미지 선택")
+        self.browse_button.clicked.connect(self.browse_image)  # 파일 브라우저 기능 연결
+
         # etc
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -79,6 +82,35 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def browse_image(self):
+        # 파일 선택 다이얼로그 열기
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getOpenFileName(
+            None, "이미지 선택", "", "Image Files (*.png *.jpg *.bmp)"
+        )
+
+        if file_path:
+            self.load_image_from_path(file_path)
+
+    # def load_image_from_path(self, image_path):
+    #     if not os.path.exists(image_path):
+    #         QtWidgets.QMessageBox.warning(
+    #             None, "Error", "파일 경로가 올바르지 않습니다."
+    #         )
+    #         return
+    #     # QLabel에 이미지 로드 및 설정
+    #     self.display_captured_image(image_path)
+
+    # def display_captured_image(self, filepath):
+    #     pixmap = QPixmap(filepath)
+    #     if pixmap.isNull():
+    #         QtWidgets.QMessageBox.warning(
+    #             None, "Error", "이미지를 로드하는 데 실패했습니다."
+    #         )
+    #         return
+    #     self.widget.setPixmap(pixmap)
+    #     self.widget.repaint()  # 화면 갱신
 
     def capture(self):
         # 콤보 박스에서 텍스트를 가져와 파일명에 포함
@@ -105,14 +137,6 @@ class Ui_MainWindow(object):
             self.display_captured_image(filename)
         else:
             QtWidgets.QMessageBox.warning(None, "Warning", "저장할 프레임이 없습니다.")
-
-    def display_captured_image(self, filepath):
-        # QLabel에 이미지 로드 및 설정
-        pixmap = QPixmap(filepath)
-
-        # QLabel에 QPixmap 설정
-        self.widget.setPixmap(pixmap)
-        self.widget.setScaledContents(True)  # 이미지 크기에 맞게 자동으로 조정
 
     def additem_combobox_1(self, comboBox):
         path = source_folder
