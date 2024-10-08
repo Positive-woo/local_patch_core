@@ -73,12 +73,6 @@ class Ui_MainWindow(object):
         self.pushButton.setGeometry(QtCore.QRect(1100, 420, 91, 91))
         self.pushButton.setObjectName("cam_capture")
 
-        # 숫자 입력 박스 (결과 판단용)
-        self.spinBox = QtWidgets.QSpinBox(self.centralwidget)
-        self.spinBox.setGeometry(QtCore.QRect(500, 420, 100, 30))
-        self.spinBox.setRange(0, 100)  # 숫자 범위 설정
-        self.spinBox.valueChanged.connect(self.update_result)
-
         # 결과 표시 QLabel
         self.result_label = QtWidgets.QLabel(self.centralwidget)
         self.result_label.setGeometry(QtCore.QRect(625, 420, 450, 91))
@@ -224,7 +218,7 @@ class Ui_MainWindow(object):
             raise FileNotFoundError(f"경로 내에 이미지를 로드할 수 없음")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        segmentations = infer(image, inferencer)
+        segmentations, pred_score = infer(image, inferencer)
 
         # Ensure output directory exists
         output_path.mkdir(parents=True, exist_ok=True)
@@ -234,30 +228,30 @@ class Ui_MainWindow(object):
 
         result_image = os.path.join(output_path, "segmentation_result.png")
 
-        print(result_image)
-
+        self.pred_score = pred_score
+        self.update_result()
         return result_image
 
     def update_result(self):
         # 위치와 숫자에 따라 결과 설정
         position = self.comboBox_2.currentText()
-        value = self.spinBox.value()
+        value = self.pred_score
 
         if position:
-            if value < 30:
-                self.result_label.setText("...")
+            if value < 0.5:
+                self.result_label.setText("PASS")
                 self.result_label.setStyleSheet(
-                    "background-color: grey; color: white; border: 1px solid black;"
+                    "background-color: green; color: white; border: 1px solid black;"
                 )
-            elif 30 <= value < 70:
+            elif value >= 0.5:
                 self.result_label.setText("NG")
                 self.result_label.setStyleSheet(
                     "background-color: red; color: white; border: 1px solid black;"
                 )
             else:
-                self.result_label.setText("PASS")
+                self.result_label.setText("...")
                 self.result_label.setStyleSheet(
-                    "background-color: green; color: white; border: 1px solid black;"
+                    "background-color: grey; color: white; border: 1px solid black;"
                 )
         else:
             self.result_label.setText("...")

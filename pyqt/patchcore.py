@@ -38,4 +38,5 @@ def infer(
     image: np.ndarray, inferencer: Inferencer
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     predictions = inferencer.predict(image=image)
-    return predictions.segmentations
+
+    return predictions.segmentations, predictions.pred_score
