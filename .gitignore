@@ -1,1 +1,11 @@
 .env
+pyqt/ipynb/bottle
+pyqt/ipynb/results
+pyqt/ipynb/datasets
+pyqt/ipynb/config/*.ckpt
+
+**/*.ckpt
+**/*.onnx
+**/*.blob
+
+__pycache__/

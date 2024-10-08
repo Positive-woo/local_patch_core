@@ -1,41 +1,65 @@
-# main.py
 import sys
-from PyQt5 import QtWidgets
-from services.test2 import start, stop, onExit, set_label, print_msg
+import cv2
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import QTimer
+from gui import Ui_MainWindow
 
-# PyQt5 어플리케이션 생성
-app = QtWidgets.QApplication([])
 
-# 윈도우 및 레이아웃 설정
-win = QtWidgets.QWidget()
-vbox = QtWidgets.QVBoxLayout()
+class MainApp(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-# 카메라 출력용 QLabel 및 버튼 설정
-label = QtWidgets.QLabel()
-btn_start = QtWidgets.QPushButton("Camera On")
-btn_stop = QtWidgets.QPushButton("Camera Off")
-btn_print = QtWidgets.QPushButton("print")
+        # Ui_MainWindow 설정
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
 
-# services의 set_label 함수를 호출해 QLabel 설정
-set_label(label)
+        # 타이머와 카메라 초기화
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_frame)
+        self.cap = cv2.VideoCapture(0)  # 0번 카메라 사용
+        self.current_frame = None  # 현재 프레임 저장할 변수
 
-# 레이아웃에 위젯 추가
-vbox.addWidget(label)
-vbox.addWidget(btn_start)
-vbox.addWidget(btn_stop)
-vbox.addWidget(btn_print)
+        # 타이머 시작 (30ms마다 프레임 업데이트)
+        self.timer.start(30)
 
-win.setLayout(vbox)
-win.show()
-start()
+        # Ui에 정의된 캡처 버튼과 캡처 기능 연결
+        self.ui.pushButton.clicked.connect(self.ui.capture)
 
-# 버튼 클릭 시 실행될 함수 연결
-btn_start.clicked.connect(start)
-btn_stop.clicked.connect(stop)
-btn_print.clicked.connect(print_msg)
+        self.show()
 
-# 어플리케이션 종료 시 호출될 함수 연결
-app.aboutToQuit.connect(onExit)
+    def update_frame(self):
+        # 카메라에서 프레임을 읽고 QLabel에 표시
+        ret, frame = self.cap.read()
+        if ret:
+            self.ui.current_frame = frame.copy()  # 현재 프레임을 저장
 
-# 어플리케이션 실행
-sys.exit(app.exec_())
+            height, width, _ = frame.shape
+            color = (0, 0, 255)
+            thickness = 2
+
+            # 프레임에 수직 및 수평 보조선 그리기
+            cv2.line(frame, (width // 4, 0), (width // 4, height), color, thickness)
+            cv2.line(
+                frame, (0, height * 3 // 4), (width, height * 3 // 4), color, thickness
+            )
+
+            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            qt_image = QImage(
+                rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888
+            )
+            self.ui.widget.setPixmap(QPixmap.fromImage(qt_image))
+
+    def closeEvent(self, event):
+        # 윈도우 종료 시 카메라 릴리스
+        if self.cap.isOpened():
+            self.cap.release()
+        event.accept()
+
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    main_app = MainApp()
+    sys.exit(app.exec_())
