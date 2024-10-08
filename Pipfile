@@ -7,7 +7,7 @@ name = "pypi"
 opencv-python = "*"
 pyqt5 = "*"
 python-dotenv = "*"
-anomalib = {extras = ["full"], version = "==0.6.0"}
+anomalib = {extras = ["full"], version = "==0.7.0"}
 
 [dev-packages]
 

@@ -3,7 +3,7 @@ import cv2
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer
-from gui import Ui_MainWindow  # gui 모듈에서 Ui_MainWindow 가져오기
+from gui import Ui_MainWindow
 
 
 class MainApp(QtWidgets.QMainWindow):
@@ -33,6 +33,17 @@ class MainApp(QtWidgets.QMainWindow):
         ret, frame = self.cap.read()
         if ret:
             self.ui.current_frame = frame.copy()  # 현재 프레임을 저장
+
+            height, width, _ = frame.shape
+            color = (0, 0, 255)
+            thickness = 2
+
+            # 프레임에 수직 및 수평 보조선 그리기
+            cv2.line(frame, (width // 4, 0), (width // 4, height), color, thickness)
+            cv2.line(
+                frame, (0, height * 3 // 4), (width, height * 3 // 4), color, thickness
+            )
+
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_image.shape
             bytes_per_line = ch * w
