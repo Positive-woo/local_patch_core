@@ -130,16 +130,33 @@ class Ui_MainWindow(object):
         self.display_captured_image(image_path)
 
     def display_captured_image(self, filepath):
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        pixmap = QPixmap(filepath)
+=======
+>>>>>>> fd4d425 (add : browse 해서 segmentation값까지 확인)
         # 패치코어 다녀오기 #
         patch_core_result = self.patch_core(filepath)
 
         pixmap = QPixmap(patch_core_result)
+<<<<<<< HEAD
+=======
+>>>>>>> 1b783ff (add : browse 해서 segmentation값까지 확인)
+>>>>>>> fd4d425 (add : browse 해서 segmentation값까지 확인)
         if pixmap.isNull():
             QtWidgets.QMessageBox.warning(
                 None, "Error", "이미지를 로드하는 데 실패했습니다."
             )
             return
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b783ff (add : browse 해서 segmentation값까지 확인)
+>>>>>>> fd4d425 (add : browse 해서 segmentation값까지 확인)
         self.image.setPixmap(pixmap)
         self.image.repaint()  # 화면 갱신
 
@@ -209,6 +226,11 @@ class Ui_MainWindow(object):
             )
         )
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> fd4d425 (add : browse 해서 segmentation값까지 확인)
     def patch_core(self, image_path):
         shape = self.comboBox.currentText()
         position = self.comboBox_2.currentText()
@@ -238,6 +260,10 @@ class Ui_MainWindow(object):
 
         return result_image
 
+<<<<<<< HEAD
+=======
+>>>>>>> 1b783ff (add : browse 해서 segmentation값까지 확인)
+>>>>>>> fd4d425 (add : browse 해서 segmentation값까지 확인)
     def update_result(self):
         # 위치와 숫자에 따라 결과 설정
         position = self.comboBox_2.currentText()
