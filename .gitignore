@@ -2,19 +2,10 @@
 pyqt/ipynb/bottle
 pyqt/ipynb/results
 pyqt/ipynb/datasets
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-pyqt/ipynb/config/*.ckpt
-=======
->>>>>>> fd4d425 (add : browse 해서 segmentation값까지 확인)
 pyqt/ipynb/config/*.ckpt
 
 **/*.ckpt
 **/*.onnx
-<<<<<<< HEAD
 **/*.blob
-=======
-**/*.blob
->>>>>>> 1b783ff (add : browse 해서 segmentation값까지 확인)
->>>>>>> fd4d425 (add : browse 해서 segmentation값까지 확인)
+
+__pycache__/
