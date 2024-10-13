@@ -3,9 +3,13 @@ pyqt/ipynb/bottle
 pyqt/ipynb/results
 pyqt/ipynb/datasets
 pyqt/ipynb/config/*.ckpt
+pyqt/source/
 
 **/*.ckpt
 **/*.onnx
 **/*.blob
 
 __pycache__/
+
+colab/
+temp/

@@ -83,6 +83,13 @@ class Ui_MainWindow(object):
             "background-color: grey; color: white; border: 1px solid black;"
         )
 
+        # warning_label 초기 상태 설정 (처음엔 빈 상태)
+        self.warning_label = QtWidgets.QLabel(self.centralwidget)
+        self.warning_label.setGeometry(QtCore.QRect(625, 385, 450, 30))
+        self.warning_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.warning_label.setStyleSheet("color: black; font-size: 12px; border: none;")
+        self.warning_label.setText("")
+
         # etc
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -112,16 +119,7 @@ class Ui_MainWindow(object):
 
         if file_path:
             ### patch core 돌린 후 경로 반환 ###
-            self.load_image_from_path(file_path)
-
-    def load_image_from_path(self, image_path):
-        if not os.path.exists(image_path):
-            QtWidgets.QMessageBox.warning(
-                None, "Error", "파일 경로가 올바르지 않습니다."
-            )
-            return
-        # QLabel에 이미지 로드 및 설정
-        self.display_captured_image(image_path)
+            self.display_captured_image(file_path)
 
     def display_captured_image(self, filepath):
         # 패치코어 다녀오기 #
@@ -153,13 +151,22 @@ class Ui_MainWindow(object):
             source_folder, shape, position, f"{timestamp}_capture.jpg"
         )
 
+        directory = os.path.dirname(filename)  # 경로에서 디렉토리만 추출
+
+        # 경로가 존재하지 않으면 디렉토리 생성
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            QtWidgets.QMessageBox.information(
+                None, "Info", "디렉토리가 없어서 생성되었습니다."
+            )
+
         # 현재 프레임이 저장되어 있는지 확인하고 저장
         if hasattr(self, "current_frame"):
             cv2.imwrite(filename, self.current_frame)
             QtWidgets.QMessageBox.information(
                 None, "Saved", f"이미지를 저장했습니다: {filename}"
             )
-            self.load_image_from_path(filename)
+            self.display_captured_image(filename)
         else:
             QtWidgets.QMessageBox.warning(None, "Warning", "저장할 프레임이 없습니다.")
 
@@ -209,7 +216,24 @@ class Ui_MainWindow(object):
         path = os.path.join(source_folder, shape, position)
         weights_path = Path(path + "/model.onnx")
         metadata_path = Path(path + "/metadata.json")
-        output_path = Path(path + "/results")
+        output_path = Path(path)
+        time_stamp = os.path.basename(image_path)
+
+        if not os.path.exists(weights_path):
+            self.warning_label.setText(
+                """훈련이 되지 않은 모델로 예상됩니다.\n선택하신 모형은 최신 촬영한 사진만 출력됩니다."""
+            )
+            self.result_label.setText("...")
+            self.result_label.setStyleSheet(
+                "background-color: grey; color: white; border: 1px solid black; font-size: 30px;"
+            )
+            return image_path
+
+        self.warning_label.setText("")
+        if "_capture.jpg" in time_stamp:
+            time_stamp = time_stamp.replace("_capture.jpg", "")
+        elif ".png" in time_stamp:
+            time_stamp = time_stamp.replace(".png", "")
 
         inferencer = get_inferencer(weight_path=weights_path, metadata=metadata_path)
 
@@ -220,13 +244,45 @@ class Ui_MainWindow(object):
 
         segmentations, pred_score = infer(image, inferencer)
 
-        # Ensure output directory exists
-        output_path.mkdir(parents=True, exist_ok=True)
+        label_text = f"MODEL : {shape}_{position}"
+
+        h, w, _ = segmentations.shape
+
+        # 라벨링 위치 설정 (우측 하단)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.001 * h
+        font_thickness = max(1, int(0.003 * h))
+        text_size, _ = cv2.getTextSize(label_text, font, font_scale, font_thickness)
+        text_w, text_h = text_size
+
+        # 빨간색 사각형 그리기 (우측 하단)
+        rectangle_bgr = (0, 0, 255)  # 빨간색 사각형
+        text_x = int(0.95 * w - text_w)  # 우측에서 약간 여유
+        text_y = int(0.95 * h - text_h)  # 하단에서 약간 여유
+        cv2.rectangle(
+            segmentations,
+            (text_x, text_y),
+            (int(0.95 * w), int(0.95 * h)),
+            rectangle_bgr,
+            -1,
+        )
+
+        # 흰색 글씨로 텍스트 적기
+        text_color = (255, 255, 255)  # 흰색 텍스트
+        cv2.putText(
+            segmentations,
+            label_text,
+            (text_x, text_y + text_h),
+            font,
+            font_scale,
+            text_color,
+            font_thickness,
+        )
 
         # return "이미지 경로"
-        cv2.imwrite(str(output_path / "segmentation_result.png"), segmentations)
+        cv2.imwrite(str(output_path / f"{time_stamp}_result.png"), segmentations)
 
-        result_image = os.path.join(output_path, "segmentation_result.png")
+        result_image = os.path.join(output_path, f"{time_stamp}_result.png")
 
         self.pred_score = pred_score
         self.update_result()
@@ -239,24 +295,28 @@ class Ui_MainWindow(object):
 
         if position:
             if value < 0.5:
-                self.result_label.setText("PASS")
+                self.result_label.setText(f"PASS : {value:.2f}")
                 self.result_label.setStyleSheet(
-                    "background-color: green; color: white; border: 1px solid black;"
+                    "background-color: green; color: white; border: 1px solid black; font-size: 30px;"
                 )
             elif value >= 0.5:
-                self.result_label.setText("NG")
+                self.result_label.setText(f"NG : {value:.2f}")
                 self.result_label.setStyleSheet(
-                    "background-color: red; color: white; border: 1px solid black;"
+                    "background-color: red; color: white; border: 1px solid black; font-size: 30px;"
                 )
+                if value > 0.75:
+                    self.warning_label.setText(
+                        "value가 너무 큽니다 ! 선택하신신 [모형 이름]과 [위치]가 맞는지 확인해주세요."
+                    )
             else:
                 self.result_label.setText("...")
                 self.result_label.setStyleSheet(
-                    "background-color: grey; color: white; border: 1px solid black;"
+                    "background-color: grey; color: white; border: 1px solid black; font-size: 30px;"
                 )
         else:
             self.result_label.setText("...")
             self.result_label.setStyleSheet(
-                "background-color: grey; color: white; border: 1px solid black;"
+                "background-color: grey; color: white; border: 1px solid black; font-size: 30px;"
             )
 
 
